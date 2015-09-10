@@ -17,8 +17,14 @@ void ofApp::setup() {
     
     bitlyMesh.setMode(OF_PRIMITIVE_POINTS);
     bitlyMesh.enableColors();
+    movieMesh.setMode(OF_PRIMITIVE_POINTS);
+    movieMesh.enableColors();
+    testMesh.setMode(OF_PRIMITIVE_POINTS);
+    testMesh.enableColors();
     
-    loadPointGeometry(&bitlyMesh);
+    loadGeometry(&bitlyMesh);
+    loadGeometry(&movieMesh);
+    loadGeometry(&testMesh);
 
     
     udpConnection.Create();
@@ -32,17 +38,14 @@ void ofApp::setup() {
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
     serial.setup(0, baud);
     
-    //TODO(COLLIN): DRAW NOISE COLUMNS BETTER
-    randomize(xNoiseColumn1, 17);
-    randomize(xNoiseColumn2, 17);
-    randomize(xNoiseColumn3, 18);
-    randomize(xNoiseColumn4, 17);
-    randomize(xNoiseColumn5, 17);
+    for (int i = 0; i < 90; i++) {
+        noiseColumns[i] = ofRandom(1.0, 20.0);
+    }
     
     //TODO(COLLIN): FIGURE OUT WHAT WE'RE VISUALIZING
     downloadBitlyData(bitlyData);
     findMinMaxForData(bitlyData, minBitly, maxBitly);
-    updateRegionBoundariesForData(bitlyData, regionStartBitly, regionLengthsBitly);
+    updateRegions(bitlyData, regionStartBitly, regionLengthsBitly);
     
     for (int i = 1; i <= 10; i+=2) {
         msgs[i-1][0] = i/2 + 1;
@@ -55,7 +58,7 @@ void ofApp::setup() {
         msgs[i+10][1] = 4;
     }
     
-    //TODO(COLLIN): MAKE BETTER MOVIE PLAYER
+    //TODO(COLLIN): MAKE MOVIE PLAYER UPDATE WITHOUT RESTARTING
     string path = "movies";
     ofDirectory dir(path);
     dir.allowExt("mp4");
@@ -70,55 +73,68 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
-    switch (state) {
-        case BITLY: {
-            setAllVerticesToColor(ofColor(0.0, 0.0, 0.0), &bitlyMesh);
-            if (timeToUpdate) {
-                gradiateBoundariesForData(bitlyData, bitlyDataNext, regionStartBitly, regionLengthsBitly, globalCounter);
-                updateGlobalCounter();
-            }
-            for (int i = 0; i < 72; i++) {
-                for (int j = 0; j < 90; j++) {
-                    int drawingPos = i*90 + j;
-                    float newR = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r), ofMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r));
-                    float newG = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g), ofMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g));
-                    float newB = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b), ofMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b));
-                    bitlyMesh.setColor(drawingPos, ofColor(newR, newG, newB));
-                }
-            }
-            updateAlphaGradient(currentHour*3, 1.0f, &bitlyMesh);
-            updateLeadingEdge(currentHour*3);
-            updateNoiseValues();
-            updateRegionBoundaries(regionStartBitly, regionLengthsBitly, &bitlyMesh);
-            if ( ofGetElapsedTimef() - lastTime >= waitTime ) {
-                lastTime = ofGetElapsedTimef();
-                //TODO(COLLIN): PUT IN DIFF THREAD
-                downloadBitlyData(bitlyDataNext);
-                findMinMaxForData(bitlyDataNext, minNewBitly, maxNewBitly);
-                updateRegionBoundariesForData(bitlyDataNext, regionStartBitly, regionLengthsBitly);
-                timeToUpdate = true;
-            }
-            break;
-        }
-        case MOVIE: {
-            movies[moviePos].update();
-            unsigned char * pixels = movies[moviePos].getPixels();
-            for (int i = 0; i < 90*72*3; i+=3) {
-                ofColor newColor(pixels[i], pixels[i+1], pixels[i+2]);
-                bitlyMesh.setColor(i/3, newColor);
-            }
-            break;
-        } case TEST: {
-//            weatherMovie.update();
-//            unsigned char * pixels = weatherMovie.getPixels();
-//            for (int i = 0; i < 90*72*3; i+=3) {
-//                ofColor newColor(pixels[i], pixels[i+1], pixels[i+2]);
-//                bitlyMesh.setColor(i/3, newColor);
-//            }
-            break;
+
+    setAllVerticesToColor(ofColor(0.0, 0.0, 0.0), &bitlyMesh);
+    if (timeToUpdate) {
+        gradiateRegions(bitlyData, bitlyDataNext, regionStartBitly, regionLengthsBitly, globalCounter);
+        updateGlobalCounter();
+    }
+    for (int i = 0; i < 72; i++) {
+        for (int j = 0; j < 90; j++) {
+            int drawingPos = i*90 + j;
+            float newR = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r), ofMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r));
+            float newG = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g), ofMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g));
+            float newB = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b), ofMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b));
+            bitlyMesh.setColor(drawingPos, ofColor(newR, newG, newB));
         }
     }
+    drawAlphaGradient(currentHour*3, 1.0f, &bitlyMesh);
+    drawLeadingEdge(0, 89, noiseColumns, currentHour*3, noiseGrow, &bitlyMesh);
+    updateNoiseValues();
+    drawRegions(regionStartBitly, regionLengthsBitly, &bitlyMesh);
+    if (currentHour != ofGetHours()) {
+        cout << "switching" << endl;
+        if (ofGetHours() == 24) {
+            serial.writeByte('h');
+            cout << "turn off" << endl;
+        } else if (ofGetHours() == 6) {
+            serial.writeByte('l');
+            cout << "turn on" << endl;
+        } else {
+            cout << "not time" << endl;
+        }
+        previousHour = currentHour;
+        currentHour = ofGetHours();
+        downloadBitlyData(bitlyDataNext);
+        findMinMaxForData(bitlyDataNext, minNewBitly, maxNewBitly);
+        updateRegions(bitlyDataNext, regionStartBitly, regionLengthsBitly);
+        timeToUpdate = true;
+    }
+
+    movies[moviePos].update();
+    unsigned char * pixels = movies[moviePos].getPixels();
+    for (int i = 0; i < 90*72*3; i+=3) {
+        ofColor newColor(pixels[i], pixels[i+1], pixels[i+2]);
+        movieMesh.setColor(i/3, newColor);
+    }
+
+    int currentBust = 0;
+    for (int column = 0; column < 90; column += 18) {
+        for (int row = 0; row < 72; row += 18) {
+            for (int k = 0; k < 18; k++) {
+                for (int l = 0; l < 18; l++) {
+                    int newCol = column+k;
+                    int newRow = row+l;
+                    testMesh.setColor(newRow*90 + newCol, testColors[currentBust]);
+                }
+            }
+            currentBust++;
+        }
+    }
+
     applyFinalAlpha(&bitlyMesh);
+    applyFinalAlpha(&movieMesh);
+    applyFinalAlpha(&testMesh);
 
     //TODO(COLLIN): MAKE FUNCTION
 //    while (oscReceiver.hasWaitingMessages()) {
@@ -145,8 +161,25 @@ void ofApp::update() {
 
 void ofApp::draw() {
     ofBackground(0.0, 0.0, 0.0);
-    drawMeshOnScreen(72, 90, bitlyMesh);
-    sendMeshColorsToHardware(bitlyMesh);
+    switch (state) {
+        case BITLY: {
+            drawMeshOnScreen(72, 90, bitlyMesh);
+            sendMeshColorsToHardware(bitlyMesh);
+            break;
+        }
+        case MOVIE: {
+            drawMeshOnScreen(72, 90, movieMesh);
+            sendMeshColorsToHardware(movieMesh);
+            break;
+        }
+        case TEST: {
+            drawMeshOnScreen(72, 90, testMesh);
+            sendMeshColorsToHardware(testMesh);
+            break;
+
+        }
+            
+    }
 }
 
 void ofApp::downloadBitlyData(int data[24][5][2]) {
@@ -175,7 +208,7 @@ void ofApp::downloadBitlyData(int data[24][5][2]) {
     }
 }
 
-void ofApp::loadPointGeometry(ofMesh *mesh) {
+void ofApp::loadGeometry(ofMesh *mesh) {
     wng::ofxCsv geoTable;
     geoTable.loadFile(ofToDataPath("leds.csv"));
     for (int i = 1; i <= 24; i++) {
@@ -195,7 +228,7 @@ void ofApp::loadPointGeometry(ofMesh *mesh) {
     }
 }
 
-void ofApp::gradiateBoundariesForData(int data[24][5][2], int nextData[24][5][2], int (*regionStart)[5], int (*regionLength)[5], float counter) {
+void ofApp::gradiateRegions(int data[24][5][2], int nextData[24][5][2], int (*regionStart)[5], int (*regionLength)[5], float counter) {
     for (int spot = 0; spot < 24; spot++) {
         float total = 0.0f;
         for (int region = 0; region < 5; region++) {
@@ -213,7 +246,7 @@ void ofApp::gradiateBoundariesForData(int data[24][5][2], int nextData[24][5][2]
 }
 
 
-void ofApp::updateRegionBoundariesForData(const int data[24][5][2], int (*regionStart)[5], int (*regionLength)[5]) {
+void ofApp::updateRegions(const int data[24][5][2], int (*regionStart)[5], int (*regionLength)[5]) {
     for (int spot = 0; spot < 24; spot++) {
         float total = 0.0f;
         for (int region = 0; region < 5; region++) {
@@ -230,7 +263,7 @@ void ofApp::updateRegionBoundariesForData(const int data[24][5][2], int (*region
     }
 }
 
-void ofApp::updateMesh(int start, int end, float xNoiseColumn[], int hour, float length, ofMesh *mesh) {
+void ofApp::drawLeadingEdge(int start, int end, float xNoiseColumn[], int hour, float length, ofMesh *mesh) {
     int butt = 0;
     for (int j = start; j <= end; j++) {
         for (int i = 0; i < floor(ofNoise(xNoiseColumn[butt])*length); i++) {
@@ -253,7 +286,7 @@ void ofApp::setAllVerticesToColor(ofColor color, ofMesh *mesh) {
     }
 }
 
-void ofApp::updateAlphaGradient(int start, float alpha, ofMesh *mesh) {
+void ofApp::drawAlphaGradient(int start, float alpha, ofMesh *mesh) {
     float shaper = 1.0;
     for (int i = 0; i < 72; i++) {
         if (i >= start && i < start + 50) {
@@ -286,7 +319,7 @@ void ofApp::updateAlphaGradient(int start, float alpha, ofMesh *mesh) {
     }
 }
 
-void ofApp::updateRegionBoundaries(int regionStart[24][5], int regionLength[24][5], ofMesh *mesh) {
+void ofApp::drawRegions(int regionStart[24][5], int regionLength[24][5], ofMesh *mesh) {
     for (int region = 0; region < 5; region++) {
         for (int i = 0; i < 72; i+=3) {
             // TODO(COLLIN): UPDATE THE DIFF SO IT ALWAYS GURANTEES 3 (not 1) spaces
@@ -321,38 +354,18 @@ void ofApp::updateRegionBoundaries(int regionStart[24][5], int regionLength[24][
     }
 }
 
-void ofApp::updateLeadingEdge(int start) {
-    updateMesh(0, 16, xNoiseColumn1, start, xGrow[0], &bitlyMesh);
-    updateMesh(18, 34, xNoiseColumn2, start, xGrow[1], &bitlyMesh);
-    updateMesh(36, 53, xNoiseColumn3, start, xGrow[2], &bitlyMesh);
-    updateMesh(55, 71, xNoiseColumn4, start, xGrow[3], &bitlyMesh);
-    updateMesh(73, 89, xNoiseColumn5, start, xGrow[4], &bitlyMesh);
-}
-
 void ofApp::updateNoiseValues() {
-    for (int i = 0; i <= 17; i++) {
-        if (i == 17) {
-            xNoiseColumn3[i] += 0.01;
-        } else {
-            xNoiseColumn1[i] += 0.01;
-            xNoiseColumn2[i] += 0.05;
-            xNoiseColumn3[i] += 0.01;
-            xNoiseColumn4[i] += 0.009;
-            xNoiseColumn5[i] += 0.03;
-        }
+    for (int i = 0; i <= 90; i++) {
+        noiseColumns[i] += 0.01;
     }
-    for (int i = 0; i < 5; i++) {
-        xGrow[i] = ofNoise(xGrowChange[i])*40.0f;
-        xGrowChange[i] += 0.01;
-    }
+        noiseGrow = ofNoise(noiseGrowChange)*40.0f;
+        noiseGrowChange += 0.01;
 }
 
 void ofApp::updateGlobalCounter() {
     globalCounter = globalCounter + 0.005f;
     if (globalCounter >= 1.0f) {
         globalCounter = 0.0f;
-        currentHour++;
-        currentHour %= 24;
         timeToUpdate = false;
         for (int i = 0; i < 24; i++) {
             for (int j = 0; j < 5; j++) {
@@ -361,7 +374,7 @@ void ofApp::updateGlobalCounter() {
             }
         }
         findMinMaxForData(bitlyData, minBitly, maxBitly);
-        updateRegionBoundariesForData(bitlyData, regionStartBitly, regionLengthsBitly);
+        updateRegions(bitlyData, regionStartBitly, regionLengthsBitly);
     }
 }
 
@@ -453,20 +466,8 @@ void ofApp::updateState(enum VISUALIZATION *state) {
             moviePos = 0;
             *state = BITLY;
         }
-    }
-}
-
-void ofApp::swap(float *a, float *b) {
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-void ofApp::randomize(float arr[], int n) {
-    srand(time(NULL));
-    for (int i = n-1; i > 0; i--) {
-        int j = rand() % (i+1);
-        swap(&arr[i], &arr[j]);
+    } else if (*state == TEST) {
+        *state = BITLY;
     }
 }
 
@@ -488,6 +489,8 @@ void ofApp::keyPressed(int key) {
         if (finalAlpha < 1.0) {
             finalAlpha += 0.1;
         }
+    } else if (key == 116) {
+        state = TEST;
     } else if (key == 49) {
         float red = globalLeft.r;
         if (red < 255.0) {
@@ -524,7 +527,7 @@ void ofApp::keyPressed(int key) {
             blue -= 5.0;
         }
         globalLeft = ofColor(globalLeft.r, globalLeft.g, blue);
-    }else if (key == 113) {
+    } else if (key == 113) {
         float red = globalRight.r;
         if (red < 255.0) {
             red += 5.0;
@@ -561,7 +564,6 @@ void ofApp::keyPressed(int key) {
         }
         globalRight = ofColor(globalRight.r, globalRight.g, blue);
     }
-    //cout << key << endl;
 }
 
 void ofApp::keyReleased(int key) {
