@@ -14,39 +14,30 @@ void ofApp::setup() {
     ofSetVerticalSync(true);
     ofEnableSmoothing();
     ofSetFrameRate(24);
-    
     bitlyMesh.setMode(OF_PRIMITIVE_POINTS);
     bitlyMesh.enableColors();
     movieMesh.setMode(OF_PRIMITIVE_POINTS);
     movieMesh.enableColors();
     testMesh.setMode(OF_PRIMITIVE_POINTS);
     testMesh.enableColors();
-    
     loadGeometry(&bitlyMesh);
     loadGeometry(&movieMesh);
     loadGeometry(&testMesh);
-
-    
     udpConnection.Create();
     udpConnection.SetEnableBroadcast(true);
     udpConnection.Connect("192.168.2.255", 11999);
     udpConnection.SetNonBlocking(true);
-    
     oscReceiver.setup(2009);
-    
-    //TODO(COLLIN): MAKE SMARTER TO CATCH CORRECT
+    // TODO(COLLIN): MAKE SMARTER TO CATCH CORRECT
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
     serial.setup(0, baud);
-    
     for (int i = 0; i < 90; i++) {
         noiseColumns[i] = ofRandom(1.0, 20.0);
     }
-    
-    //TODO(COLLIN): FIGURE OUT WHAT WE'RE VISUALIZING
+    // TODO(COLLIN): FIGURE OUT WHAT WE'RE VISUALIZING
     downloadBitlyData(bitlyData);
     findMinMaxForData(bitlyData, minBitly, maxBitly);
     updateRegions(bitlyData, regionStartBitly, regionLengthsBitly);
-    
     for (int i = 1; i <= 10; i+=2) {
         msgs[i-1][0] = i/2 + 1;
         msgs[i-1][1] = 1;
@@ -57,8 +48,7 @@ void ofApp::setup() {
         msgs[i+10][0] = i/2 + 1;
         msgs[i+10][1] = 4;
     }
-    
-    //TODO(COLLIN): MAKE MOVIE PLAYER UPDATE WITHOUT RESTARTING
+    // TODO(COLLIN): MAKE MOVIE PLAYER UPDATE WITHOUT RESTARTING
     string path = "movies";
     ofDirectory dir(path);
     dir.allowExt("mp4");
@@ -73,7 +63,6 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
-
     setAllVerticesToColor(ofColor(0.0, 0.0, 0.0), &bitlyMesh);
     if (timeToUpdate) {
         gradiateRegions(bitlyData, bitlyDataNext, regionStartBitly, regionLengthsBitly, globalCounter);
@@ -118,17 +107,17 @@ void ofApp::update() {
         movieMesh.setColor(i/3, newColor);
     }
 
-    int currentBust = 0;
+    int count = 0;
     for (int column = 0; column < 90; column += 18) {
         for (int row = 0; row < 72; row += 18) {
             for (int k = 0; k < 18; k++) {
                 for (int l = 0; l < 18; l++) {
                     int newCol = column+k;
                     int newRow = row+l;
-                    testMesh.setColor(newRow*90 + newCol, testColors[currentBust]);
+                    testMesh.setColor(newRow*90 + newCol, testColors[count]);
                 }
             }
-            currentBust++;
+            count++;
         }
     }
 
@@ -136,7 +125,7 @@ void ofApp::update() {
     applyFinalAlpha(&movieMesh);
     applyFinalAlpha(&testMesh);
 
-    //TODO(COLLIN): MAKE FUNCTION
+////   TODO(COLLIN): MAKE FUNCTION
 //    while (oscReceiver.hasWaitingMessages()) {
 //        ofxOscMessage m;
 //        oscReceiver.getNextMessage(&m);
@@ -176,9 +165,7 @@ void ofApp::draw() {
             drawMeshOnScreen(72, 90, testMesh);
             sendMeshColorsToHardware(testMesh);
             break;
-
         }
-            
     }
 }
 
@@ -228,17 +215,22 @@ void ofApp::loadGeometry(ofMesh *mesh) {
     }
 }
 
-void ofApp::gradiateRegions(int data[24][5][2], int nextData[24][5][2], int (*regionStart)[5], int (*regionLength)[5], float counter) {
+void ofApp::gradiateRegions(int data[24][5][2], int nD[24][5][2], int (*rS)[5], int (*rL)[5], float c) {
     for (int spot = 0; spot < 24; spot++) {
         float total = 0.0f;
         for (int region = 0; region < 5; region++) {
-            total += static_cast<int>(ofMap(counter, 0.0, 1.0, abs(data[spot][region][1]), abs(nextData[spot][region][1])));
+            int diffC = abs(data[spot][region][1]);
+            int diffN = abs(nD[spot][region][1]);
+            total += static_cast<int>(ofMap(c, 0.0, 1.0, diffC, diffN));
         }
         int currentPixels = 0;
         for (int region = 0; region < 5; region++) {
-            float percent = (static_cast<int>(ofMap(counter, 0.0, 1.0, abs(data[spot][region][1]), abs(nextData[spot][region][1])))/total * 86.0);
-            regionLength[spot][region] = percent;
-            regionStart[spot][region] = currentPixels;
+            int diffC = abs(data[spot][region][1]);
+            int diffN = abs(nD[spot][region][1]);
+            float pMap = ofMap(c, 0.0, 1.0, diffC, diffN);
+            float percent = (static_cast<int>(pMap)/total * 86.0);
+            rL[spot][region] = percent;
+            rS[spot][region] = currentPixels;
             currentPixels += percent;
             currentPixels++;
         }
@@ -246,7 +238,7 @@ void ofApp::gradiateRegions(int data[24][5][2], int nextData[24][5][2], int (*re
 }
 
 
-void ofApp::updateRegions(const int data[24][5][2], int (*regionStart)[5], int (*regionLength)[5]) {
+void ofApp::updateRegions(const int data[24][5][2], int (*rs)[5], int (*rl)[5]) {
     for (int spot = 0; spot < 24; spot++) {
         float total = 0.0f;
         for (int region = 0; region < 5; region++) {
@@ -255,19 +247,19 @@ void ofApp::updateRegions(const int data[24][5][2], int (*regionStart)[5], int (
         int currentPixels = 0;
         for (int region = 0; region < 5; region++) {
             float percent = abs(data[spot][region][1])/total * 86.0;
-            regionLength[spot][region] = percent;
-            regionStart[spot][region] = currentPixels;
+            rl[spot][region] = percent;
+            rs[spot][region] = currentPixels;
             currentPixels += percent;
             currentPixels++;
         }
     }
 }
 
-void ofApp::drawLeadingEdge(int start, int end, float xNoiseColumn[], int hour, float length, ofMesh *mesh) {
+void ofApp::drawLeadingEdge(int s, int e, float noise[], int hr, float len, ofMesh *mesh) {
     int butt = 0;
-    for (int j = start; j <= end; j++) {
-        for (int i = 0; i < floor(ofNoise(xNoiseColumn[butt])*length); i++) {
-            int newI = (hour+i)%72;
+    for (int j = s; j <= e; j++) {
+        for (int i = 0; i < floor(ofNoise(noise[butt])*len); i++) {
+            int newI = (hr+i)%72;
             int pos = newI*90 + j;
             float newR = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r), ofMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r));
             float newG = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g), ofMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g));
@@ -290,12 +282,12 @@ void ofApp::drawAlphaGradient(int start, float alpha, ofMesh *mesh) {
     float shaper = 1.0;
     for (int i = 0; i < 72; i++) {
         if (i >= start && i < start + 50) {
-            float alpha1 = nonLinMap(i, start, start + 50, 0.0, 1.0, shaper);
+            float alpha1 = nLMap(i, start, start + 50, 0.0, 1.0, shaper);
             float alpha2 = 1.0f;
             if (i != start + 50) {
-                alpha2 = nonLinMap(i+1, start + 1, start + 50, 0.0, 1.0, shaper);
+                alpha2 = nLMap(i+1, start + 1, start + 50, 0.0, 1.0, shaper);
             }
-            alpha = nonLinMap(globalCounter, 0.0f, 1.0f, alpha2, alpha1, shaper);
+            alpha = nLMap(globalCounter, 0.0f, 1.0f, alpha2, alpha1, shaper);
             for (int j = 0; j < 90; j++) {
                 int pos = i*90 + j;
                 ofColor blah = (*mesh).getColor(pos);
@@ -303,12 +295,12 @@ void ofApp::drawAlphaGradient(int start, float alpha, ofMesh *mesh) {
                 (*mesh).setColor(pos, blah);
             }
         } else if (start > 22 && i >= 0 && i < start-22) {
-            float alpha1 = nonLinMap(i+72, start + 1, start + 50, 0.0, 1.0, shaper);
+            float alpha1 = nLMap(i+72, start + 1, start + 50, 0.0, 1.0, shaper);
             float alpha2 = 1.0f;
             if (i+71+1 != start + 50) {
-                alpha2 = nonLinMap(i+72+1, start + 1, start + 50, 0.0, 1.0, shaper);
+                alpha2 = nLMap(i+72+1, start + 1, start + 50, 0.0, 1.0, shaper);
             }
-            alpha = nonLinMap(globalCounter, 0.0f, 1.0f, alpha2, alpha1, shaper);
+            alpha = nLMap(globalCounter, 0.0f, 1.0f, alpha2, alpha1, shaper);
             for (int j = 0; j < 90; j++) {
                 int pos = i*90 + j;
                 ofColor blah = (*mesh).getColor(pos);
@@ -319,34 +311,41 @@ void ofApp::drawAlphaGradient(int start, float alpha, ofMesh *mesh) {
     }
 }
 
-void ofApp::drawRegions(int regionStart[24][5], int regionLength[24][5], ofMesh *mesh) {
+void ofApp::drawRegions(int rS[24][5], int rL[24][5], ofMesh *mesh) {
     for (int region = 0; region < 5; region++) {
         for (int i = 0; i < 72; i+=3) {
-            // TODO(COLLIN): UPDATE THE DIFF SO IT ALWAYS GURANTEES 3 (not 1) spaces
             int diff = 6;
             for (int j = 0; j < 6; j++) {
                 if (region == 0) {
-                    int pos = (i+j)*90 + regionStart[i/3][region]+regionLength[i/3][region];
+                    int pos = (i+j)*90 + rS[i/3][region]+rL[i/3][region];
                     for (int k = -diff; k <= 0; k++) {
                         ofColor c = (*mesh).getColor(pos+k);
-                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, 255.0*(*mesh).getColor(pos+k).a*ofMap(pos+k, pos-diff, pos, 1.0f, 0.0f)));
+                        float m = ofMap(pos+k, pos-diff, pos, 1.0f, 0.0f);
+                        float a = 255.0*(*mesh).getColor(pos+k).a*m;
+                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, a));
                     }
                 } else if (region == 4) {
-                    int pos = (i+j)*90 + regionStart[i/3][region-1]+regionLength[i/3][region-1];
+                    int pos = (i+j)*90 + rS[i/3][region-1]+rL[i/3][region-1];
                     for (int k = 0; k <= diff; k++) {
                         ofColor c = (*mesh).getColor(pos+k);
-                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, 255.0*(*mesh).getColor(pos+k).a*ofMap(pos+k, pos, pos+diff, 0.0f, 1.0f)));
+                        float m = ofMap(pos+k, pos, pos+diff, 0.0f, 1.0f);
+                        float a = 255.0*(*mesh).getColor(pos+k).a*m;
+                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, a));
                     }
                 } else {
-                    int pos = (i+j)*90 + regionStart[i/3][region-1]+regionLength[i/3][region-1];
+                    int pos = (i+j)*90 + rS[i/3][region-1]+rL[i/3][region-1];
                     for (int k = 0; k <= diff; k++) {
                         ofColor c = (*mesh).getColor(pos+k);
-                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, 255.0*(*mesh).getColor(pos+k).a*ofMap(pos+k, pos, pos+diff, 0.0f, 1.0f)));
+                        float m = ofMap(pos+k, pos, pos+diff, 0.0f, 1.0f);
+                        float a = 255.0*(*mesh).getColor(pos+k).a*m;
+                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, a));
                     }
-                    pos = (i+j)*90 + + regionStart[i/3][region]+regionLength[i/3][region];
+                    pos = (i+j)*90 + + rS[i/3][region]+rL[i/3][region];
                     for (int k = -diff; k <= 0; k++) {
                         ofColor c = (*mesh).getColor(pos+k);
-                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, 255.0*(*mesh).getColor(pos+k).a*ofMap(pos+k, pos-diff, pos, 1.0f, 0.0f)));
+                        float m = ofMap(pos+k, pos-diff, pos, 1.0f, 0.0f);
+                        float a = 255.0*(*mesh).getColor(pos+k).a*m;
+                        (*mesh).setColor(pos+k, ofColor(c.r, c.g, c.b, a));
                     }
                 }
             }
@@ -378,7 +377,7 @@ void ofApp::updateGlobalCounter() {
     }
 }
 
-void ofApp::drawMeshOnScreen(int numColumns, int numRows,ofMesh mesh) {
+void ofApp::drawMeshOnScreen(int numColumns, int numRows, ofMesh mesh) {
     for (int i = 0; i < numColumns; i++) {
         for (int j = 0; j < numRows; j++) {
             int pos = i*90 + j;
@@ -471,10 +470,10 @@ void ofApp::updateState(enum VISUALIZATION *state) {
     }
 }
 
-float ofApp::nonLinMap(float in, float inMin, float inMax, float outMin, float outMax, float shaper) {
-    float pct = ofMap (in, inMin, inMax, 0, 1, true);
-    pct = powf(pct, shaper);
-    float out = ofMap(pct, 0,1, outMin, outMax, true);
+float ofApp::nLMap(float i, float iMi, float iMa, float oMi, float oMa, float s) {
+    float pct = ofMap(i, iMi, iMa, 0, 1, true);
+    pct = powf(pct, s);
+    float out = ofMap(pct, 0, 1, oMi, oMa, true);
     return out;
 }
 
