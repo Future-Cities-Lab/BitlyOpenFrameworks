@@ -664,7 +664,7 @@ void ofApp::keyPressed(int key) {
     if (key == 98) {
         updateState(&state);
     } else if (key == 359) {
-        if (finalAlpha > 0.0) {
+        if (finalAlpha > 0.1) {
             finalAlpha -= 0.1;
         }
     } else if (key == 357) {
