@@ -21,10 +21,5 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     void exit();
-    
-    //ofVideoPlayer 		fingerMovie;
-    vector <ofVideoPlayer> movies;
-    int moviePos = 0;
-    int numMovies = 1;
 
 };

@@ -99,17 +99,17 @@ bool timeToUpdate = false;
 
 float squareNoises[24][5][2];
 
-int moviePos = 0;
-int numMovies = 1;
-
-
 enum VISUALIZATION { BITLY, TEST, PLAYER };
 
 VISUALIZATION state = BITLY;
 
+vector <ofVideoPlayer> movies;
 
-//float lastTime = 0.0f;
-//float waitTime = 30.0f;
+int moviePos;
+int numMovies;
+
+int shutdownHour = 11;
+int startupHour = 12;
 
 void downloadBitlyData(int data[24][5][2]) {
     ofxJSONElement json;
@@ -146,6 +146,7 @@ void updateState(enum VISUALIZATION *state) {
             moviePos = 0;
             *state = BITLY;
         }
+        
     } else if (*state == TEST) {
         *state = BITLY;
     }
@@ -231,12 +232,18 @@ void ofApp::setup() {
     serial.setup(0, 57600);
     
     // VIDEO
+    
+    moviePos = 0;
+
     string path = "movies";
     ofDirectory dir(path);
     dir.allowExt("mp4");
     dir.listDir();
+    
     numMovies = dir.numFiles();
+    
     for (int i = 0; i < dir.numFiles(); i++) {
+        
         ofVideoPlayer player;
         player.loadMovie(dir.getPath(i));
         player.play();
@@ -300,10 +307,10 @@ void ofApp::update() {
             updateRegionBoundaries(&bitlyMesh, regionStartBitly, regionLengthsBitly);
             if (currentHour != ofGetHours()) {
                 cout << "switching" << endl;
-                if (ofGetHours() == 24) {
+                if (ofGetHours() == shutdownHour) {
                     serial.writeByte('h');
                     cout << "turn off" << endl;
-                } else if (ofGetHours() == 6) {
+                } else if (ofGetHours() == startupHour) {
                     serial.writeByte('l');
                     cout << "turn on" << endl;
                 } else {
@@ -338,8 +345,8 @@ void ofApp::update() {
         }
 
         case PLAYER: {
-            movies[0].update();
-            unsigned char * pixels = movies[0].getPixels();
+            movies[moviePos].update();
+            unsigned char * pixels = movies[moviePos].getPixels();
             for (int i = 0; i < 90*72*3; i+=3) {
                 ofColor newColor(pixels[i], pixels[i+1], pixels[i+2]);
                 playerMesh.setColor(i/3, newColor);
