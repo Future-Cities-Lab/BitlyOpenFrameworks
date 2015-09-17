@@ -680,7 +680,12 @@ void ofApp::keyPressed(int key) {
         }
     } else if (key == 116) {
         state = TEST;
+    } else if (key == 104) {
+        serial.writeByte('h');
+    } else if (key == 108) {
+        serial.writeByte('l');
     }
+    
 //    else if (key == 49) {
 //        float red = globalLeft.r;
 //        if (red < 255.0) {
