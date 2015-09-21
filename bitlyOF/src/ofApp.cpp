@@ -306,16 +306,16 @@ void ofApp::update() {
             updateNoiseValues();
             updateRegionBoundaries(&bitlyMesh, regionStartBitly, regionLengthsBitly);
             if (currentHour != ofGetHours()) {
-                cout << "switching" << endl;
-                if (ofGetHours() == shutdownHour) {
-                    serial.writeByte('h');
-                    cout << "turn off" << endl;
-                } else if (ofGetHours() == startupHour) {
-                    serial.writeByte('l');
-                    cout << "turn on" << endl;
-                } else {
-                    cout << "not time" << endl;
-                }
+//                cout << "switching" << endl;
+//                if (ofGetHours() == shutdownHour) {
+//                    serial.writeByte('h');
+//                    cout << "turn off" << endl;
+//                } else if (ofGetHours() == startupHour) {
+//                    serial.writeByte('l');
+//                    cout << "turn on" << endl;
+//                } else {
+//                    cout << "not time" << endl;
+//                }
                 previousHour = currentHour;
                 currentHour = ofGetHours();
                 downloadBitlyData(bitlyDataNext);
