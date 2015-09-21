@@ -108,8 +108,8 @@ vector <ofVideoPlayer> movies;
 int moviePos;
 int numMovies;
 
-int shutdownHour = 11;
-int startupHour = 12;
+int shutdownHour = 23;
+int startupHour = 4;
 
 void downloadBitlyData(int data[24][5][2]) {
     ofxJSONElement json;
@@ -117,8 +117,8 @@ void downloadBitlyData(int data[24][5][2]) {
     string hours[24] = {"00", "01", "02", "03", "04", "05", "06", "07", "08",
         "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
         "21", "22", "23"};
-    string regions[5] = {"Berlin", "London", "New York",
-        "San Francisco", "Tokyo"};
+    string regions[5] = {"Tokyo", "San Francisco", "New York",
+        "London", "Berlin"};
     bool parsingSuccessful = json.open(bitlyURL);
     if (parsingSuccessful) {
         for (int i = 0;  i < 24; i++) {
@@ -306,16 +306,16 @@ void ofApp::update() {
             updateNoiseValues();
             updateRegionBoundaries(&bitlyMesh, regionStartBitly, regionLengthsBitly);
             if (currentHour != ofGetHours()) {
-//                cout << "switching" << endl;
-//                if (ofGetHours() == shutdownHour) {
-//                    serial.writeByte('h');
-//                    cout << "turn off" << endl;
-//                } else if (ofGetHours() == startupHour) {
-//                    serial.writeByte('l');
-//                    cout << "turn on" << endl;
-//                } else {
-//                    cout << "not time" << endl;
-//                }
+                cout << "switching" << endl;
+                if (ofGetHours() == shutdownHour) {
+                    serial.writeByte('h');
+                    cout << "turn off" << endl;
+                } else if (ofGetHours() == startupHour) {
+                    serial.writeByte('l');
+                    cout << "turn on" << endl;
+                } else {
+                    cout << "not time" << endl;
+                }
                 previousHour = currentHour;
                 currentHour = ofGetHours();
                 downloadBitlyData(bitlyDataNext);
