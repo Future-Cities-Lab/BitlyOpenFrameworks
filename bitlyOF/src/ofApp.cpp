@@ -266,6 +266,7 @@ void ofApp::setup() {
             bitlyNoise[i][j][1] = ofRandom(0.0,100.0);
         }
     }
+    serial.writeByte('l');
     
 }
 
@@ -314,24 +315,27 @@ void ofApp::update() {
             updateLeadingEdge(currentHour*3);
             updateNoiseValues();
             updateRegionBoundaries(&bitlyMesh, regionStartBitly, regionLengthsBitly);
-            if (currentHour != ofGetHours()) {
-                cout << "switching" << endl;
-                if (ofGetHours() == shutdownHour) {
-                    serial.writeByte('h');
-                    cout << "turn off" << endl;
-                } else if (ofGetHours() == startupHour) {
-                    serial.writeByte('l');
-                    cout << "turn on" << endl;
-                } else {
-                    cout << "not time" << endl;
-                }
-                previousHour = currentHour;
-                currentHour = ofGetHours();
-                downloadBitlyData(bitlyDataNext);
-                findMinMaxForData(bitlyDataNext, minNewBitly, maxNewBitly);
-                updateRegionBoundariesForData(bitlyDataNext, regionStartBitly, regionLengthsBitly);
-                timeToUpdate = true;
-            }
+            
+//            if (currentHour != ofGetHours()) {
+//                cout << "switching" << endl;
+//                if (ofGetHours() == shutdownHour) {
+//                    serial.writeByte('h');
+//                    cout << "turn off" << endl;
+//                } else if (ofGetHours() == startupHour) {
+//                    serial.writeByte('l');
+//                    cout << "turn on" << endl;
+//                } else {
+//                    cout << "not time" << endl;
+//                }
+//                
+//                previousHour = currentHour;
+//                currentHour = ofGetHours();
+//                downloadBitlyData(bitlyDataNext);
+//                findMinMaxForData(bitlyDataNext, minNewBitly, maxNewBitly);
+//                updateRegionBoundariesForData(bitlyDataNext, regionStartBitly, regionLengthsBitly);
+//                timeToUpdate = true;
+//            }
+            
             applyFinalAlpha(&bitlyMesh);
             break;
         }
@@ -390,7 +394,7 @@ void ofApp::update() {
             if (arg == 0) {
                 serial.writeByte('l');
             } else {
-                serial.writeByte('h');
+                //serial.writeByte('h');
             }
         }
     }
@@ -412,52 +416,52 @@ void drawMeshOnScreen(int numColumns, int numRows, ofMesh meshToDraw) {
 void ofApp::draw() {
     ofBackground(0.0, 0.0, 0.0);
 
-    ofSetColor(alphaTestColor);
-    ofFill();
-    ofEllipse(100, 100, 100, 100);
-    ofDrawBitmapString(ofToString(finalAlpha), 200, 100);
-
-    ofSetColor(leftTestColor);
-    ofFill();
-    ofEllipse(100, 200, 100, 100);
-    ofDrawBitmapString(ofToString(leftPercent), 200, 200);
-
-    
-    ofSetColor(rightTestColor);
-    ofFill();
-    ofEllipse(100, 300, 100, 100);
-    ofDrawBitmapString(ofToString(rightPercent), 200, 300);
-
-
-    ofSetColor(stateTestColor);
-    ofFill();
-    ofEllipse(100, 400, 100, 100);
-    ofDrawBitmapString(ofToString(state), 200, 400);
-
-    
-    ofSetColor(switchTestColor);
-    ofFill();
-    ofEllipse(100, 500, 100, 100);
-    ofDrawBitmapString(ofToString(switchState), 200, 500);
-    
-    ofSetColor(recievedTestColor);
-    ofFill();
-    ofEllipse(100, 600, 100, 100);
+//    ofSetColor(alphaTestColor);
+//    ofFill();
+//    ofEllipse(100, 100, 100, 100);
+//    ofDrawBitmapString(ofToString(finalAlpha), 200, 100);
+//
+//    ofSetColor(leftTestColor);
+//    ofFill();
+//    ofEllipse(100, 200, 100, 100);
+//    ofDrawBitmapString(ofToString(leftPercent), 200, 200);
+//
+//    
+//    ofSetColor(rightTestColor);
+//    ofFill();
+//    ofEllipse(100, 300, 100, 100);
+//    ofDrawBitmapString(ofToString(rightPercent), 200, 300);
+//
+//
+//    ofSetColor(stateTestColor);
+//    ofFill();
+//    ofEllipse(100, 400, 100, 100);
+//    ofDrawBitmapString(ofToString(state), 200, 400);
+//
+//    
+//    ofSetColor(switchTestColor);
+//    ofFill();
+//    ofEllipse(100, 500, 100, 100);
+//    ofDrawBitmapString(ofToString(switchState), 200, 500);
+//    
+//    ofSetColor(recievedTestColor);
+//    ofFill();
+//    ofEllipse(100, 600, 100, 100);
 
 
     switch (state) {
         case BITLY: {
-            //drawMeshOnScreen(72, 90, bitlyMesh);
+            drawMeshOnScreen(72, 90, bitlyMesh);
             sendMeshColorsToHardware(bitlyMesh);
             break;
         }
         case TEST: {
-            //drawMeshOnScreen(72, 90, testMesh);
+            drawMeshOnScreen(72, 90, testMesh);
             sendMeshColorsToHardware(testMesh);
             break;
         }
         case PLAYER: {
-            //drawMeshOnScreen(72, 90, playerMesh);
+            drawMeshOnScreen(72, 90, playerMesh);
             sendMeshColorsToHardware(playerMesh);
             break;
         }
