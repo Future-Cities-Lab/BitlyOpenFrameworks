@@ -67,6 +67,15 @@ int bColumn = 0;
 
 char msgs[20][3*324 + 2];
 
+ofColor recievedTestColor = ofColor(255,255,255);
+ofColor alphaTestColor = ofColor(255,255,255);
+ofColor leftTestColor = ofColor(255,255,255);
+ofColor rightTestColor = ofColor(255,255,255);
+ofColor stateTestColor = ofColor(255,255,255);
+ofColor switchTestColor = ofColor(255,255,255);
+int switchState = -1;
+
+
 ofColor testColors[20] = {  ofColor(255, 0, 0), ofColor(0, 255, 0),
     ofColor(0, 0, 255), ofColor(139, 0, 139),
     ofColor(255, 165, 0), ofColor(255, 255, 0),
@@ -359,17 +368,24 @@ void ofApp::update() {
     
 //   TODO(COLLIN): MAKE FUNCTION
     while (oscReceiver.hasWaitingMessages()) {
+        recievedTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
         ofxOscMessage m;
         oscReceiver.getNextMessage(&m);
         if (m.getAddress() == "/alpha/"){
+            alphaTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
             finalAlpha = ofMap(m.getArgAsInt32(0), 0.0, 1024.0, 0.0, 1.0);
         } else if (m.getAddress() == "/left/") {
+            leftTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
             leftPercent = ofMap(m.getArgAsInt32(0), 0.0, 1024.0, 0.0, 1.0);
         } else if (m.getAddress() == "/right/") {
+            rightTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
             rightPercent = ofMap(m.getArgAsInt32(0), 0.0, 1024.0, 0.0, 1.0);
         } else if (m.getAddress() == "/state/") {
+            stateTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
             updateState(&state);
         } else if (m.getAddress() == "/switch/") {
+            switchTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+            switchState *= -1;
             int arg = m.getArgAsInt32(0);
             if (arg == 0) {
                 serial.writeByte('l');
@@ -395,19 +411,53 @@ void drawMeshOnScreen(int numColumns, int numRows, ofMesh meshToDraw) {
 
 void ofApp::draw() {
     ofBackground(0.0, 0.0, 0.0);
+
+    ofSetColor(alphaTestColor);
+    ofFill();
+    ofEllipse(100, 100, 100, 100);
+    ofDrawBitmapString(ofToString(finalAlpha), 200, 100);
+
+    ofSetColor(leftTestColor);
+    ofFill();
+    ofEllipse(100, 200, 100, 100);
+    ofDrawBitmapString(ofToString(leftPercent), 200, 200);
+
+    
+    ofSetColor(rightTestColor);
+    ofFill();
+    ofEllipse(100, 300, 100, 100);
+    ofDrawBitmapString(ofToString(rightPercent), 200, 300);
+
+
+    ofSetColor(stateTestColor);
+    ofFill();
+    ofEllipse(100, 400, 100, 100);
+    ofDrawBitmapString(ofToString(state), 200, 400);
+
+    
+    ofSetColor(switchTestColor);
+    ofFill();
+    ofEllipse(100, 500, 100, 100);
+    ofDrawBitmapString(ofToString(switchState), 200, 500);
+    
+    ofSetColor(recievedTestColor);
+    ofFill();
+    ofEllipse(100, 600, 100, 100);
+
+
     switch (state) {
         case BITLY: {
-            drawMeshOnScreen(72, 90, bitlyMesh);
+            //drawMeshOnScreen(72, 90, bitlyMesh);
             sendMeshColorsToHardware(bitlyMesh);
             break;
         }
         case TEST: {
-            drawMeshOnScreen(72, 90, testMesh);
+            //drawMeshOnScreen(72, 90, testMesh);
             sendMeshColorsToHardware(testMesh);
             break;
         }
         case PLAYER: {
-            drawMeshOnScreen(72, 90, playerMesh);
+            //drawMeshOnScreen(72, 90, playerMesh);
             sendMeshColorsToHardware(playerMesh);
             break;
         }
