@@ -8,6 +8,9 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+ofArduino	ard;
+bool		bSetupArduino;
+
 
 // ALL
 void loadPointGeometry(ofMesh *mesh);
@@ -108,9 +111,10 @@ bool timeToUpdate = false;
 
 float squareNoises[24][5][2];
 
-enum VISUALIZATION { BITLY, TEST, PLAYER };
+enum VISUALIZATION { BITLY, PLAYER, TEST };
 
 VISUALIZATION state = BITLY;
+int statePos = 1;
 
 vector <ofVideoPlayer> movies;
 
@@ -119,6 +123,10 @@ int numMovies;
 
 int shutdownHour = 23;
 int startupHour = 4;
+
+#define LED1     5
+#define LED2     6
+
 
 void downloadBitlyData(int data[24][5][2]) {
     ofxJSONElement json;
@@ -149,15 +157,19 @@ void downloadBitlyData(int data[24][5][2]) {
 void updateState(enum VISUALIZATION *state) {
     if (*state == BITLY) {
         *state = PLAYER;
+        statePos = 2;
     } else if (*state == PLAYER) {
         moviePos++;
+        statePos++;
         if (moviePos == numMovies) {
             moviePos = 0;
             *state = BITLY;
+            statePos = 1;
         }
         
     } else if (*state == TEST) {
         *state = BITLY;
+        statePos = 1;
     }
 }
 
@@ -238,6 +250,7 @@ void ofApp::setup() {
     
     
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
+    
     serial.setup(0, 57600);
     
     // VIDEO
@@ -267,6 +280,14 @@ void ofApp::setup() {
         }
     }
     serial.writeByte('l');
+
+
+    
+    ard.connect(deviceList[0].getDevicePath(), 57600);
+    
+
+    ofAddListener(ard.EInitialized, this, &ofApp::setupArduino);
+    bSetupArduino	= false;	// flag so we setup arduino when its ready, you don't need to touch this :)
     
 }
 
@@ -295,6 +316,8 @@ float nonLinMap(float in, float inMin, float inMax, float outMin, float outMax, 
 
 
 void ofApp::update() {
+    updateArduino();
+
     switch (state) {
         case BITLY: {
             setAllVerticesToColor(&bitlyMesh, ofColor(0.0, 0.0, 0.0));
@@ -398,6 +421,102 @@ void ofApp::update() {
             }
         }
     }
+}
+
+//--------------------------------------------------------------
+void ofApp::setupArduino(const int & version) {
+    
+    // remove listener because we don't need it anymore
+    ofRemoveListener(ard.EInitialized, this, &ofApp::setupArduino);
+    
+    bSetupArduino = true;
+    
+    ofLogNotice() << ard.getFirmwareName();
+    ofLogNotice() << "firmata v" << ard.getMajorFirmwareVersion() << "." << ard.getMinorFirmwareVersion();
+
+    
+    ard.sendAnalogPinReporting(2, ARD_ANALOG);
+    ard.sendAnalogPinReporting(1, ARD_ANALOG);
+    ard.sendAnalogPinReporting(0, ARD_ANALOG);
+    
+    ard.sendDigitalPinMode(10, ARD_INPUT);
+    ard.sendDigitalPinMode(12, ARD_INPUT);
+    ard.sendDigitalPinMode(LED1, ARD_OUTPUT);
+    ard.sendDigitalPinMode(LED2, ARD_PWM);
+
+
+    
+    
+    ofAddListener(ard.EDigitalPinChanged, this, &ofApp::digitalPinChanged);
+    ofAddListener(ard.EAnalogPinChanged, this, &ofApp::analogPinChanged);
+}
+
+//--------------------------------------------------------------
+void ofApp::updateArduino(){
+    
+    // update the arduino, get any data or messages.
+    // the call to ard.update() is required
+    ard.update();
+    
+    // do not send anything until the arduino has been set up
+    if (bSetupArduino) {
+        // fade the led connected to pin D11
+        ard.sendPwm(11, (int)(128 + 128 * sin(ofGetElapsedTimef())));   // pwm...
+    }
+    
+}
+
+// digital pin event handler, called whenever a digital pin value has changed
+// note: if an analog pin has been set as a digital pin, it will be handled
+// by the digitalPinChanged function rather than the analogPinChanged function.
+
+//--------------------------------------------------------------
+void ofApp::digitalPinChanged(const int & pinNum) {
+    
+    cout << "digital pin: " + ofToString(pinNum) + " = " + ofToString(ard.getDigital(pinNum)) << endl;
+    if (pinNum == 10 && ard.getDigital(pinNum) == 1) {
+        
+        stateTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+        updateState(&state);
+        ard.sendString(ofToString(statePos));
+        // sene byte
+        
+    } else if (pinNum == 12 && ard.getDigital(pinNum) == 1) {
+        switchTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+        
+        if (switchState == -1) {
+            switchState *= -1;
+            ard.sendDigital(LED1, 0);
+            serial.writeByte('l');
+        } else {
+            ard.sendDigital(LED1, 1);
+            switchState *= -1;
+            serial.writeByte('h');
+        }
+    }
+}
+
+// analog pin event handler, called whenever an analog pin value has changed
+
+//--------------------------------------------------------------
+void ofApp::analogPinChanged(const int & pinNum) {
+
+    if (pinNum == 2){
+        alphaTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+        finalAlpha = ofMap(ard.getAnalog(pinNum), 1024.0, 0.0, 0.0, 1.0);
+        ard.sendPwm(LED2, ofMap(ard.getAnalog(pinNum), 1024.0, 0.0, 0.0, 255.0));
+
+    } else if (pinNum == 1) {
+        leftTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+        leftPercent = ofMap(ard.getAnalog(pinNum), 0.0, 1024.0, 0.0, 1.0);
+    } else if (pinNum == 0) {
+        rightTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
+        rightPercent = ofMap(ard.getAnalog(pinNum), 0.0, 1024.0, 0.0, 1.0);
+    }
+    //cout << "analog pin: " + ofToString(pinNum) + " = " + ofToString(ard.getAnalog(pinNum)) << endl;
+
+    // do something with the analog input. here we're simply going to print the pin number and
+    // value to the screen each time it changes
 }
 
 void drawMeshOnScreen(int numColumns, int numRows, ofMesh meshToDraw) {

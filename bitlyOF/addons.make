@@ -1,11 +1,7 @@
+ofxCsv
+ofxDmx
+ofxGenericDmx
 ofxGui
+ofxJSON
 ofxNetwork
 ofxOsc
-ofxSvg
-ofxVectorGraphics
-ofxXmlSettings
-ofxCsv
-ofxJSON
-ofxOAuth
-ofxTwitter
-ofxTwitterStream

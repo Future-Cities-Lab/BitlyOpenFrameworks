@@ -21,5 +21,10 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     void exit();
+    void setupArduino(const int & version);
+    void updateArduino();
+    void digitalPinChanged(const int & pinNum);
+
+    void analogPinChanged(const int & pinNum);
 
 };
