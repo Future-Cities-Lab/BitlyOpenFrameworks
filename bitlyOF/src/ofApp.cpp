@@ -283,7 +283,7 @@ void ofApp::setup() {
 
 
     
-    ard.connect(deviceList[0].getDevicePath(), 57600);
+    ard.connect(deviceList[1].getDevicePath(), 57600);
     
 
     ofAddListener(ard.EInitialized, this, &ofApp::setupArduino);
