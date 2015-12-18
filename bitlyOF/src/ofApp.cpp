@@ -281,9 +281,16 @@ void ofApp::setup() {
     }
     serial.writeByte('l');
 
-
+    int correctPosition = 0;
     
-    ard.connect(deviceList[1].getDevicePath(), 57600);
+    for (int i = 0; i < deviceList.size(); i++) {
+        if (deviceList[i].getDeviceName() == "tty.usbmodem1411") {
+            correctPosition = i;
+            cout << "got it" << endl;
+        }
+    }
+    
+    ard.connect(deviceList[correctPosition].getDevicePath(), 57600);
     
 
     ofAddListener(ard.EInitialized, this, &ofApp::setupArduino);
