@@ -124,6 +124,8 @@ int numMovies;
 int shutdownHour = 23;
 int startupHour = 4;
 
+bool gotIt;
+
 #define LED1     5
 #define LED2     6
 
@@ -178,6 +180,8 @@ void ofApp::setup() {
     ofSetVerticalSync(true);
     ofEnableSmoothing();
     ofSetFrameRate(12);
+    
+    gotIt = false;
     
     bitlyMesh.setMode(OF_PRIMITIVE_POINTS);
     bitlyMesh.enableColors();
@@ -284,9 +288,10 @@ void ofApp::setup() {
     int correctPosition = 0;
     
     for (int i = 0; i < deviceList.size(); i++) {
-        if (deviceList[i].getDeviceName() == "tty.usbmodem1411") {
+        if (ofIsStringInString(deviceList[i].getDeviceName(), "1411")) {
             correctPosition = i;
-            cout << "got it" << endl;
+            cout << "GOT IT!" << endl;
+            gotIt = true;
         }
     }
     
@@ -593,6 +598,13 @@ void ofApp::draw() {
         }
 
     }
+    ofSetColor(ofColor(20.0, 234.0, 23.0));
+    ofFill();
+    if (gotIt) {
+        cout << "drawing" << endl;
+        ofEllipse(10, 10, 20, 20);
+    }
+
 }
 
 /* GEOMETRY */
