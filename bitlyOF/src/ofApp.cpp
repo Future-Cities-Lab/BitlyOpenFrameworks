@@ -880,8 +880,10 @@ void ofApp::keyPressed(int key) {
         state = TEST;
     } else if (key == 104) {
         serial.writeByte('h');
+        isOn = false;
     } else if (key == 108) {
         serial.writeByte('l');
+        isOn = true;
     }
 }
 
