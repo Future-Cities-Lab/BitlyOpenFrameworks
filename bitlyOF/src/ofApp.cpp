@@ -125,6 +125,8 @@ int shutdownHour = 23;
 int startupHour = 4;
 
 bool gotIt;
+bool isOn;
+
 
 #define LED1     5
 #define LED2     6
@@ -182,6 +184,7 @@ void ofApp::setup() {
     ofSetFrameRate(12);
     
     gotIt = false;
+
     
     bitlyMesh.setMode(OF_PRIMITIVE_POINTS);
     bitlyMesh.enableColors();
@@ -284,6 +287,7 @@ void ofApp::setup() {
         }
     }
     serial.writeByte('l');
+    isOn = true;
 
     int correctPosition = 0;
     
@@ -429,7 +433,7 @@ void ofApp::update() {
             if (arg == 0) {
                 serial.writeByte('l');
             } else {
-                //serial.writeByte('h');
+                serial.writeByte('h');
             }
         }
     }
@@ -500,10 +504,12 @@ void ofApp::digitalPinChanged(const int & pinNum) {
             switchState *= -1;
             ard.sendDigital(LED1, 0);
             serial.writeByte('l');
+            isOn = true;
         } else {
             ard.sendDigital(LED1, 1);
             switchState *= -1;
             serial.writeByte('h');
+            isOn = false;
         }
     }
 }
@@ -525,10 +531,6 @@ void ofApp::analogPinChanged(const int & pinNum) {
         rightTestColor = ofColor(ofRandom(255.0),ofRandom(255.0),ofRandom(255.0));
         rightPercent = ofMap(ard.getAnalog(pinNum), 0.0, 1024.0, 0.0, 1.0);
     }
-    //cout << "analog pin: " + ofToString(pinNum) + " = " + ofToString(ard.getAnalog(pinNum)) << endl;
-
-    // do something with the analog input. here we're simply going to print the pin number and
-    // value to the screen each time it changes
 }
 
 void drawMeshOnScreen(int numColumns, int numRows, ofMesh meshToDraw) {
@@ -601,8 +603,12 @@ void ofApp::draw() {
     ofSetColor(ofColor(20.0, 234.0, 23.0));
     ofFill();
     if (gotIt) {
-        cout << "drawing" << endl;
         ofEllipse(10, 10, 20, 20);
+    }
+    ofSetColor(ofColor(20.0, 234.0, 0.0));
+    ofFill();
+    if (isOn) {
+        ofEllipse(60, 60, 20, 20);
     }
 
 }
@@ -877,80 +883,6 @@ void ofApp::keyPressed(int key) {
     } else if (key == 108) {
         serial.writeByte('l');
     }
-    
-//    else if (key == 49) {
-//        float red = globalLeft.r;
-//        if (red < 255.0) {
-//            red += 5.0;
-//        }
-//        globalLeft = ofColor(red, globalLeft.g, globalLeft.b);
-//    } else if (key == 50) {
-//        float red = globalLeft.r;
-//        if (red > 0.0) {
-//            red -= 5.0;
-//        }
-//        globalLeft = ofColor(red, globalLeft.g, globalLeft.b);
-//    } else if (key == 51) {
-//        float green = globalLeft.g;
-//        if (green < 255.0) {
-//            green += 5.0;
-//        }
-//        globalLeft = ofColor(globalLeft.r, green, globalLeft.b);
-//    } else if (key == 52) {
-//        float green = globalLeft.g;
-//        if (green > 0.0) {
-//            green -= 5.0;
-//        }
-//        globalLeft = ofColor(globalLeft.r, green, globalLeft.b);
-//    } else if (key == 53) {
-//        float blue = globalLeft.b;
-//        if (blue < 255.0) {
-//            blue += 5.0;
-//        }
-//        globalLeft = ofColor(globalLeft.r, globalLeft.g, blue);
-//    } else if (key == 54) {
-//        float blue = globalLeft.b;
-//        if (blue > 0.0) {
-//            blue -= 5.0;
-//        }
-//        globalLeft = ofColor(globalLeft.r, globalLeft.g, blue);
-//    } else if (key == 113) {
-//        float red = globalRight.r;
-//        if (red < 255.0) {
-//            red += 5.0;
-//        }
-//        globalRight = ofColor(red, globalRight.g, globalRight.b);
-//    } else if (key == 119) {
-//        float red = globalRight.r;
-//        if (red > 0.0) {
-//            red -= 5.0;
-//        }
-//        globalRight = ofColor(red, globalRight.g, globalRight.b);
-//    } else if (key == 101) {
-//        float green = globalRight.g;
-//        if (green < 255.0) {
-//            green += 5.0;
-//        }
-//        globalRight = ofColor(globalRight.r, green, globalRight.b);
-//    } else if (key == 114) {
-//        float green = globalRight.g;
-//        if (green > 0.0) {
-//            green -= 5.0;
-//        }
-//        globalRight = ofColor(globalRight.r, green, globalRight.b);
-//    } else if (key == 116) {
-//        float blue = globalRight.b;
-//        if (blue < 255.0) {
-//            blue += 5.0;
-//        }
-//        globalRight = ofColor(globalRight.r, globalRight.g, blue);
-//    } else if (key == 121) {
-//        float blue = globalRight.b;
-//        if (blue > 0.0) {
-//            blue -= 5.0;
-//        }
-//        globalRight = ofColor(globalRight.r, globalRight.g, blue);
-//    }
 }
 
 void ofApp::keyReleased(int key) {
