@@ -344,9 +344,9 @@ void ofApp::update() {
             for (int i = 0; i < 72; i++) {
                 for (int j = 0; j < 90; j++) {
                     int drawingPos = i*90 + j;
-                    float newR = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r), ofMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r));
-                    float newG = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g), ofMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g));
-                    float newB = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b), ofMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b));
+                    float newR = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r, 2), 2);
+                    float newG = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g, 2), 2);
+                    float newB = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b, 2), 2);
                     bitlyMesh.setColor(drawingPos, ofColor(newR, newG, newB));
                 }
             }
@@ -681,9 +681,9 @@ void updateMesh(ofMesh * mesh, int start, int end, float xNoiseColumn[], int hou
         for (int i = 0; i < floor(ofNoise(xNoiseColumn[butt])*length); i++) {
             int newI = (hour+i)%72;
             int pos = newI*90 + j;
-            float newR = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r), ofMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r));
-            float newG = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g), ofMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g));
-            float newB = ofMap(j, 0, 90, ofMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b), ofMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b));
+            float newR = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r, 2),2);
+            float newG = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g, 2),2);
+            float newB = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b, 2),2);
             (*mesh).setColor(pos, ofColor(newR, newG, newB));
         }
         butt++;
