@@ -82,7 +82,7 @@ int switchState = -1;
 ofColor testColors[20] = {  ofColor(255, 0, 0), ofColor(0, 255, 0),
     ofColor(0, 0, 255), ofColor(139, 0, 139),
     ofColor(255, 165, 0), ofColor(255, 255, 0),
-    ofColor(255, 255, 255), ofColor(165, 42, 42),
+    ofColor(77.0, 159.0, 222.0), ofColor(165, 42, 42),
     ofColor(255, 0, 255), ofColor(255, 192, 203),
     ofColor(46, 139, 87), ofColor(0, 255, 255),
     ofColor(135, 206, 235), ofColor(240, 230, 140),
@@ -184,7 +184,6 @@ void ofApp::setup() {
     ofSetFrameRate(12);
     
     gotIt = false;
-
     
     bitlyMesh.setMode(OF_PRIMITIVE_POINTS);
     bitlyMesh.enableColors();
@@ -207,8 +206,10 @@ void ofApp::setup() {
     loadPointGeometry(&puffMesh);
     
     
-    globalLeft = ofColor(255.0, 255.0, 0.0);
-    globalRight = ofColor(0.0, 0.0, 255.0);
+    globalLeft = ofColor(255.0, 105.0, 0.0);
+    globalRight = ofColor(77.0, 159.0, 222.0);
+    
+    
     leftPercent = 1.0;
     rightPercent = 1.0;
     finalAlpha = 0.5f;
@@ -254,7 +255,6 @@ void ofApp::setup() {
         cout << 4 << endl;
         cout << "" << endl;
     }
-    
     
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
     
@@ -449,7 +449,6 @@ void ofApp::setupArduino(const int & version) {
     
     ofLogNotice() << ard.getFirmwareName();
     ofLogNotice() << "firmata v" << ard.getMajorFirmwareVersion() << "." << ard.getMinorFirmwareVersion();
-
     
     ard.sendAnalogPinReporting(2, ARD_ANALOG);
     ard.sendAnalogPinReporting(1, ARD_ANALOG);
@@ -459,9 +458,6 @@ void ofApp::setupArduino(const int & version) {
     ard.sendDigitalPinMode(12, ARD_INPUT);
     ard.sendDigitalPinMode(LED1, ARD_OUTPUT);
     ard.sendDigitalPinMode(LED2, ARD_PWM);
-
-
-    
     
     ofAddListener(ard.EDigitalPinChanged, this, &ofApp::digitalPinChanged);
     ofAddListener(ard.EAnalogPinChanged, this, &ofApp::analogPinChanged);
@@ -586,6 +582,7 @@ void ofApp::draw() {
         case BITLY: {
             drawMeshOnScreen(72, 90, bitlyMesh);
             sendMeshColorsToHardware(bitlyMesh);
+            //sendMeshColorsToHardwareTest(bitlyMesh);
             break;
         }
         case TEST: {
