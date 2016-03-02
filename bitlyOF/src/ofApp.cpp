@@ -50,6 +50,7 @@ int previousHour;
 float globalCounter = 0.0f;
 
 ofColor globalLeft;
+ofColor globalCenter;
 ofColor globalRight;
 float leftPercent;
 float rightPercent;
@@ -207,6 +208,7 @@ void ofApp::setup() {
     
     
     globalLeft = ofColor(255.0, 105.0, 0.0);
+    globalCenter = ofColor(255.0, 255.0, 255.0);
     globalRight = ofColor(77.0, 159.0, 222.0);
     
     
@@ -330,7 +332,6 @@ float nonLinMap(float in, float inMin, float inMax, float outMin, float outMax, 
     return out;
 }
 
-
 void ofApp::update() {
     updateArduino();
 
@@ -344,9 +345,20 @@ void ofApp::update() {
             for (int i = 0; i < 72; i++) {
                 for (int j = 0; j < 90; j++) {
                     int drawingPos = i*90 + j;
-                    float newR = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r, 2), 2);
-                    float newG = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g, 2), 2);
-                    float newB = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b, 2), 2);
+                    float newR;
+                    float newG;
+                    float newB;
+                    int shape = 5;
+                    if (j < 45) {
+                        
+                        newR = nonLinMap(j, 0, 45, globalLeft.r, globalCenter.r, shape);
+                        newG = nonLinMap(j, 0, 45, globalLeft.g, globalCenter.g, shape);
+                        newB = nonLinMap(j, 0, 45, globalLeft.b, globalCenter.b, shape);
+                    } else {
+                        newR = nonLinMap(j, 45, 90, globalRight.r, globalCenter.r, shape);
+                        newG = nonLinMap(j, 45, 90, globalRight.g, globalCenter.g, shape);
+                        newB = nonLinMap(j, 45, 90, globalRight.b, globalCenter.b, shape);
+                    }
                     bitlyMesh.setColor(drawingPos, ofColor(newR, newG, newB));
                 }
             }
@@ -681,12 +693,35 @@ void updateMesh(ofMesh * mesh, int start, int end, float xNoiseColumn[], int hou
         for (int i = 0; i < floor(ofNoise(xNoiseColumn[butt])*length); i++) {
             int newI = (hour+i)%72;
             int pos = newI*90 + j;
-            float newR = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.r, globalLeft.r, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.r, globalRight.r, 2),2);
-            float newG = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.g, globalLeft.g, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.g, globalRight.g, 2),2);
-            float newB = nonLinMap(j, 0, 90, nonLinMap(leftPercent, 0.0, 1.0, globalRight.b, globalLeft.b, 2), nonLinMap(rightPercent, 0.0, 1.0, globalLeft.b, globalRight.b, 2),2);
+            int shape = 5;
+            float newR;
+            float newG;
+            float newB;
+            if (j < 45) {
+                
+                newR = nonLinMap(j, 0, 45, globalLeft.r, globalCenter.r, shape);
+                newG = nonLinMap(j, 0, 45, globalLeft.g, globalCenter.g, shape);
+                newB = nonLinMap(j, 0, 45, globalLeft.b, globalCenter.b, shape);
+            } else {
+                newR = nonLinMap(j, 45, 90, globalRight.r, globalCenter.r, shape);
+                newG = nonLinMap(j, 45, 90, globalRight.g, globalCenter.g, shape);
+                newB = nonLinMap(j, 45, 90, globalRight.b, globalCenter.b, shape);
+            }
+            
             (*mesh).setColor(pos, ofColor(newR, newG, newB));
         }
         butt++;
+    }
+    for (int i = 0; i < 72; i++) {
+        for (int j = 45; j <= 67; j++) {
+            int here = j;
+            int otherSide = 134-j;
+            int drawingPos = i*90 + here;
+            int drawingPos2 = i*90 + otherSide;
+            ofColor temp = bitlyMesh.getColor(drawingPos);
+            (*mesh).setColor(drawingPos, bitlyMesh.getColor(drawingPos2));
+            (*mesh).setColor(drawingPos2, temp);
+        }
     }
 }
 
