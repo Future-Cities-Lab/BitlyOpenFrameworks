@@ -899,7 +899,7 @@ void randomize(float arr[], int n) {
 
 void ofApp::keyPressed(int key) {
     cout << key << endl;
-    if (key == 89) {
+    if (key == 98) {
         updateState(&state);
     } else if (key == 359) {
         if (finalAlpha > 0.1) {
